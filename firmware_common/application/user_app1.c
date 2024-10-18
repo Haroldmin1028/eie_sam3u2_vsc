@@ -92,17 +92,18 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
-  /* Turn on the left side blue LED with the LedOn function */
-  LedOn(BLUE0);
-
-  /* Turn on the right side red LED with the LedToggle funtion (what assumption is being made?)*/
-  LedOn(RED3);
-
-  /* Set the 3rd LED to blink green */
-  LedBlink(GREEN2, LED_2HZ);
-
-  /* Set the 2nd LED to the dimmest level available */
-  LedPWM(BLUE1, LED_PWM_5);
+  LedOff(RED0);
+  LedOff(GREEN0);
+  LedOff(BLUE0);  
+  LedOff(RED1);
+  LedOff(GREEN1);
+  LedOff(BLUE1);  
+  LedOff(RED2);
+  LedOff(GREEN2);
+  LedOff(BLUE2);  
+  LedOff(RED3);
+  LedOff(GREEN3);
+  LedOff(BLUE3);
 
   /* If good initialization, set state to Idle */
   if( 1 )
