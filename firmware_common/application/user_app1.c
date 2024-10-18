@@ -104,6 +104,7 @@ void UserApp1Initialize(void)
   LedOff(RED3);
   LedOff(GREEN3);
   LedOff(BLUE3);
+  LedOff(LCD_BL);
 
   /* If good initialization, set state to Idle */
   if( 1 )
@@ -154,11 +155,33 @@ State Machine Function Definitions
 static void UserApp1SM_Idle(void)
 {
   static u16 u16BlinkCount = 0;
+  static u8 u8Counter = 0;
 
   u16BlinkCount++;
   if(u16BlinkCount == 250) {
     u16BlinkCount = 0;
-    LedToggle(RED3);
+    
+    u8Counter++;
+    if (u8Counter == 16) {
+      u8Counter = 0;
+    }
+
+    LedOff(RED3);
+    LedOff(GREEN2);
+    LedOff(BLUE1);
+    LedOff(BLUE0);
+    LedOff(RED0);
+
+    if (u8Counter & 0x01) 
+      LedOn(RED3);
+    if (u8Counter & 0x02) 
+      LedOn(GREEN2);
+    if (u8Counter & 0x04)
+      LedOn(BLUE1);
+    if (u8Counter & 0x08) {
+      LedOn(RED0);
+      LedOn(BLUE0);
+    }
   }
   
 } /* end UserApp1SM_Idle() */
