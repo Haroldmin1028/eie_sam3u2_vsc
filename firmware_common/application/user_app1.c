@@ -92,6 +92,18 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  /* Turn on the left side blue LED with the LedOn function */
+  LedOn(BLUE0);
+
+  /* Turn on the right side red LED with the LedToggle funtion (what assumption is being made?)*/
+  LedOn(RED3);
+
+  /* Set the 3rd LED to blink green */
+  LedBlink(GREEN2, LED_2HZ);
+
+  /* Set the 2nd LED to the dimmest level available */
+  LedPWM(BLUE1, LED_PWM_5);
+
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -140,7 +152,14 @@ State Machine Function Definitions
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
-     
+  static u16 u16BlinkCount = 0;
+
+  u16BlinkCount++;
+  if(u16BlinkCount == 250) {
+    u16BlinkCount = 0;
+    LedToggle(RED3);
+  }
+  
 } /* end UserApp1SM_Idle() */
      
 
