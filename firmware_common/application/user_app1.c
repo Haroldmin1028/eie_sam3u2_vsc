@@ -156,6 +156,18 @@ static void UserApp1SM_Idle(void)
 {
   static u16 u16BlinkCount = 0;
   static u8 u8Counter = 0;
+  static u8 u8ColorIndex = 0;
+
+  static u8 aau8Color[][3] = {{RED0, 0xff, 0xff}, {RED0, GREEN0, 0xff}, 
+                              {0xff, GREEN0, 0xff}, {0xff, GREEN0, BLUE0},
+                              {0xff, 0xff, BLUE0}, {RED0, 0xff, BLUE0},
+                              {RED0, GREEN0, BLUE0}};
+  
+  u8 u8Offset = 0;
+  
+  for (u8 i = 0; i < (U8_TOTAL_LEDS - 1); i++) {
+    LedOff((LedNameType)i);
+  }
 
   u16BlinkCount++;
   if(u16BlinkCount == 250) {
@@ -165,22 +177,37 @@ static void UserApp1SM_Idle(void)
     if (u8Counter == 16) {
       u8Counter = 0;
     }
+  }
 
-    LedOff(RED3);
-    LedOff(GREEN2);
-    LedOff(BLUE1);
-    LedOff(BLUE0);
-    LedOff(RED0);
+  if(u8Counter & 0x01) {
+    u8Offset = 3;
+    for (u8 j = 0; j < 3; j++) {
+      if(aau8Color[u8ColorIndex][j] != 0xff)
+        LedOn((aau8Color[u8ColorIndex][j]) + u8Offset);
+    }
+  }
 
-    if (u8Counter & 0x01) 
-      LedOn(RED3);
-    if (u8Counter & 0x02) 
-      LedOn(GREEN2);
-    if (u8Counter & 0x04)
-      LedOn(BLUE1);
-    if (u8Counter & 0x08) {
-      LedOn(RED0);
-      LedOn(BLUE0);
+  if(u8Counter & 0x02) {
+    u8Offset = ;
+    for (u8 j = 0; j < 3; j++) {
+      if(aau8Color[u8ColorIndex][j] != 0xff)
+        LedOn((aau8Color[u8ColorIndex][j]) + u8Offset);
+    }
+  }
+
+  if(u8Counter & 0x03) {
+    u8Offset = 9;
+    for (u8 j = 0; j < 3; j++) {
+      if(aau8Color[u8ColorIndex][j] != 0xff)
+        LedOn((aau8Color[u8ColorIndex][j]) + u8Offset);
+    }
+  }
+
+  if(u8Counter & 0x04) {
+    u8Offset = 12;
+    for (u8 j = 0; j < 3; j++) {
+      if(aau8Color[u8ColorIndex][j] != 0xff)
+        LedOn((aau8Color[u8ColorIndex][j]) + u8Offset);
     }
   }
   
