@@ -92,15 +92,20 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  /*LedOn(BLUE0); //Turn on 1st LED blue with LedOn
+  LedToggle(RED3); //Turn on 4th LED red (assumes LED is OFF)
+  LedBlink(GREEN2, LED_2HZ); //Set 3rd LED to blink green
+  LedPWM(BLUE1, LED_PWM_5); //Set 2nd LED to dimmest level*/
+  
   LedOff(RED0);
   LedOff(GREEN0);
-  LedOff(BLUE0);  
+  LedOff(BLUE0);
   LedOff(RED1);
   LedOff(GREEN1);
-  LedOff(BLUE1);  
+  LedOff(BLUE1);
   LedOff(RED2);
   LedOff(GREEN2);
-  LedOff(BLUE2);  
+  LedOff(BLUE2);
   LedOff(RED3);
   LedOff(GREEN3);
   LedOff(BLUE3);
@@ -154,8 +159,17 @@ State Machine Function Definitions
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
-  HEARTBEAT_OFF();
-  
+  static u16 u16counter = 0;
+  static u8 u8counter = 0;
+  u16counter++;
+  if (u16counter == 250) {
+    u16counter = 0;
+    u8counter++;
+    if (u8counter == 16) {
+      u8counter = 0;
+    }
+  }
+
 } /* end UserApp1SM_Idle() */
      
 
