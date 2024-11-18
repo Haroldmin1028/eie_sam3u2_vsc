@@ -170,6 +170,35 @@ static void UserApp1SM_Idle(void)
     }
   }
 
+  /*LedOff(RED3);
+  LedOff(GREEN2);
+  LedOff(BLUE1);
+  LedOff(RED0);
+  LedOff(BLUE0);
+  
+  if (u8counter & 0x01)
+    LedOn(RED3);
+  if (u8counter & 0x02)
+    LedOn(GREEN2);
+  if (u8counter & 0x04)
+    LedOn(BLUE1);
+  if (u8counter & 0x08) {
+    LedOn(RED0);
+    LedOn(BLUE0);
+  }*/
+  
+  static LedNameType colour_array[][] = {{RED0, 0, 0}, {RED0, GREEN0, 0}, {0, GREEN0, 0}, {0, GREEN0, BLUE0}, {0, 0, BLUE0}, {RED0, 0, BLUE0}, {RED0, GREEN0, BLUE0}};
+  for (u8 i = 0; i < 12; i++)
+    LedOff(LedNameType[i]);
+  for (u8 j = 0; j < 7; j++) {
+    if (colour_array[j][0] != 0)
+      LedOn(RED0);
+    if (colour_array[j][1] != 0)
+      LedOn(GREEN0);
+    if (colour_array[j][2] != 0)
+      LedOn(BLUE0);
+  }
+
 } /* end UserApp1SM_Idle() */
      
 
