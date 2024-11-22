@@ -183,8 +183,39 @@ static void UserApp1SM_Idle(void)
   else
     LedOff(LCD_BL);
   */
-  
-  
+  static u16 counter = 0;
+  static u8 correct = 0;
+  static u8 blinking = 0;
+
+  LedOn(RED3);
+  LedOn(GREEN3);
+
+  if (IsButtonPressed(BUTTON0))
+    LedOn(BLUE0);
+  else
+    LedOff(BLUE0);
+
+  if(IsButtonPressed(BUTTON1))
+    LedOn(BLUE1);
+  else
+    LedOff(BLUE1);
+
+  if (IsButtonHeld(BUTTON0, 2000) && IsButtonHeld(BUTTON1, 2000)) {
+    //check password
+
+    if (correct) {
+      LedOff(RED3);
+      LedOff(GREEN3);
+      LedBlink(GREEN3, LED_1HZ)
+      blinking = 1;
+      //counter = 0
+    }
+
+    if (blinking = 1) { //&& reaches 3s
+      LedOn(GREEN3);
+    }
+
+  }
 
   
 
