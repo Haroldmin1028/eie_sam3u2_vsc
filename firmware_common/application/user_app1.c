@@ -92,6 +92,8 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  PWMAudioSetFrequency(BUZZER1, 500);
+
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -140,7 +142,55 @@ State Machine Function Definitions
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
-     
+  // delete code relating to twinkle twinkle little star for actual exercise
+  // exercise requires debug module
+  static u16 notes[] = {C4, D4, E4, F4, G4, A4, B4, C5};
+  static u8 note_index = 0;
+  static int song_index = 0;
+  static int c_notes[] = {0, 1, 13, 28, 29, 41};
+  static int d_notes[] = {11, 12, 20, 27, 39, 40};
+  static int e_notes[] = {9, 10, 18, 19, 25, 26, 37, 38};
+  static int f_notes[] = {7, 8, 16, 17, 23, 24, 35, 36};
+  static int g_notes[] = {2, 3, 6, 14, 15, 21, 22, 30, 31, 34};
+  static int a_notes[] = {4, 5, 32, 33};
+
+  if (WasButtonPressed(BUTTON1)) {
+    ButtonAcknowledge(BUTTON1);
+    if (song_index == 42)
+      song_index = 0;
+    for (int i = 0; i < sizeof(c_notes)/sizeof(int); i++) {
+      if (c_notes[i] == song_index)
+        note_index = 0;
+    }
+    for (int i = 0; i < sizeof(d_notes)/sizeof(int); i++) {
+      if (d_notes[i] == song_index)
+        note_index = 1;
+    }
+    for (int i = 0; i < sizeof(e_notes)/sizeof(int); i++) {
+      if (e_notes[i] == song_index)
+        note_index = 2;
+    }
+    for (int i = 0; i < sizeof(f_notes)/sizeof(int); i++) {
+      if (f_notes[i] == song_index)
+        note_index = 3;
+    }
+    for (int i = 0; i < sizeof(g_notes)/sizeof(int); i++) {
+      if (g_notes[i] == song_index)
+        note_index = 4;
+    }
+    for (int i = 0; i < sizeof(a_notes)/sizeof(int); i++) {
+      if (a_notes[i] == song_index)
+        note_index = 5;
+    }
+    PWMAudioSetFrequency(BUZZER1, notes[note_index]);
+    song_index++;
+  }
+
+  if (IsButtonPressed(BUTTON0))
+    PWMAudioOn(BUZZER1);
+  else
+    PWMAudioOff(BUZZER1);
+
 } /* end UserApp1SM_Idle() */
      
 
