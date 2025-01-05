@@ -183,42 +183,67 @@ static void UserApp1SM_Idle(void)
   else
     LedOff(LCD_BL);
   */
-  static u16 counter = 0;
-  static u8 correct = 0;
-  static u8 blinking = 0;
+  /*
+  static u8 correct = 0; 
+  static u8 password[10] = {1, 2, 1, 2};
+  static u8 entered[10];
+  static u8 index = 0;
 
   LedOn(RED3);
   LedOn(GREEN3);
 
-  if (IsButtonPressed(BUTTON0))
+  if (IsButtonPressed(BUTTON0)) {
     LedOn(BLUE0);
+    entered[index] = 1;
+    index++;
+  }
   else
     LedOff(BLUE0);
 
-  if(IsButtonPressed(BUTTON1))
+  if (IsButtonPressed(BUTTON1)) {
     LedOn(BLUE1);
+    entered[index] = 2;
+    index++;
+  }
   else
     LedOff(BLUE1);
 
   if (IsButtonHeld(BUTTON0, 2000) && IsButtonHeld(BUTTON1, 2000)) {
-    //check password
+    int i;
+    for (i = 0; i < 10; i++) {
+      if (entered[i] != password[i]) {
+        correct = 0;
+        break;
+      }
+    }
+    if (i == 10)
+      correct = 1;
 
-    if (correct) {
+    LedOff(RED3);
+    LedOff(GREEN3);
+    if (correct)
+      LedBlink(GREEN3, LED_1HZ);
+    else
+      LedBlink(RED3, LED_1HZ);
+     
+    static u16 counter = 0;
+    counter++;
+    if(counter == 3000) {
       LedOff(RED3);
       LedOff(GREEN3);
-      LedBlink(GREEN3, LED_1HZ)
-      blinking = 1;
-      //counter = 0
-    }
-
-    if (blinking = 1) { //&& reaches 3s
       LedOn(GREEN3);
+      if (!correct)
+        LedOn(RED3);
     }
 
+    index = 0;
+    correct = 0;
+    for (int j = 0; j < 10; j++)
+      entered[j] = 0;
   }
+  */
 
-  
-
+ 
 } /* end UserApp1SM_Idle() */
      
 
