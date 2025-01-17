@@ -90,6 +90,8 @@ Includes
 #include "messaging.h"
 #include "timer.h"
 
+#include "dotmatrix_board_test.h"
+
 #include "sam3u_i2c.h"
 #include "sam3u_spi.h"
 #include "sam3u_ssp.h"
