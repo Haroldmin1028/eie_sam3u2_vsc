@@ -243,6 +243,7 @@ def build(ctx):
     dot_matrix_folders = [
         "firmware_dotmatrix/bsp/",
         "firmware_dotmatrix/drivers",
+        "firmware_dotmatrix/application",
         "firmware_dotmatrix/libraries/captouch",
         "firmware_dotmatrix/libraries/captouch/include",
     ]
