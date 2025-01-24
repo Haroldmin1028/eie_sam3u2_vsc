@@ -73,6 +73,11 @@ static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state 
 Function Definitions
 **********************************************************************************************************************/
 
+/* Function prototypes */
+static void UserApp1SM_WaitAntReady(void);
+static void UserApp1SM_WaitChannelOpen(void);
+static void UserApp1SM_ChannelOpen(void);
+
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*! @publicsection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
@@ -172,10 +177,12 @@ State Machine Function Definitions
 /* Wait for ANT channel to be configured */
 static void UserApp1SM_WaitAntReady(void) {
   if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CONFIGURED) {
-    if (AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP))
-      UserApp1_pfStateMachine = Userapp1sm_waitchannelOpen;
-    else
+    if (AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP)) {
+      UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen;
+    }
+    else {
       UserApp1_pfStateMachine = UserApp1SM_Error;
+    }
   }
 } /* end UserApp1SM_WaitAntReady() */
 
@@ -187,7 +194,54 @@ static void UserApp1SM_WaitChannelOpen(void) {
 
 /* Process messages while channel is open */
 static void UserApp1SM_ChannelOpen(void) {
+  static u8 au8TestMessage[] = {0, 0, 0, 0, 0xA5, 0, 0, 0};
+  static PixelAddressType sStringLocation;
+  u8 au8DataContent[] = "xxxxxxxxxxxxxxxx";
 
+  extern PixelBlockType G_sLcdClearLine7; /* From lcd-NHD-C12864LZ.c */
+
+  if (AntReadAppMessageBuffer()) {
+    if (G_eAntApiCurrentMessageClass == ANT_DATA) {
+      /* We got some data! Convert it to displayable ASCII characters */
+      for (u8 i = 0; i < ANT_DATA_BYTES; i++) {
+        au8DataContent[2 * i] = HexToASCIICharUpper(G_au8AntApiCurrentMessageBytes[i] / 16);
+        au8DataContent[2 * i + 1] = HexToASCIICharUpper(G_au8AntApiCurrentMessageBytes[i] % 16);
+      }
+
+      /* Write the board string in the middle of last row */
+      sStringLocation.u16PixelColumnAddress = 
+        U16_LCD_CENTER_COLUMN - (strlen((char const*)au8DataContent) * 
+        (U8_LCD_SMALL_FONT_COLUMNS + U8_LCD_SMALL_FONT_SPACE) / 2);
+      sStringLocation.u16PixelRowAddress = U8_LCD_SMALL_FONT_LINE7;
+      LcdClearPixels(&G_sLcdClearLine7);
+      LcdLoadString(au8DataContent, LCD_FONT_SMALL, &sStringLocation);
+    }
+    else if (G_eAntApiCurrentMessageClass == ANT_TICK) {
+      /* Check the buttons and update corresponding slot in au8TestMessage */
+      au8TestMessage[0] = 0x00;
+      au8TestMessage[1] = 0x00;
+      au8TestMessage[2] = 0x00;
+      au8TestMessage[3] = 0x00;
+
+      if (IsButtonPressed(BUTTON0)) {
+        au8TestMessage[0] = 0xff;
+      }
+      if (IsButtonPressed(BUTTON1)) {
+        au8TestMessage[1] = 0xff;
+      }
+
+      /* A channel period has gone by: typically this is when new
+      data should be queued to send */
+      au8TestMessage[7]++; //ask about this
+      if (au8TestMessage[7] == 0) {
+        au8TestMessage[6]++;
+        if (au8TestMessage[6] == 0) {
+          au8TestMessage[5]++;
+        }
+      }
+      AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8TestMessage);
+    }
+  }
 } /* end UserApp1SM_ChannelOpen() */
 
 /* What does this state do? */
