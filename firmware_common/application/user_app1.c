@@ -65,6 +65,9 @@ extern AntExtendedDataType G_sAntApiCurrentMessageExtData;                // Fro
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
+static u32 UserApp1_u32DataMsgCount = 0;  /* ANT_DATA packet counter */
+static u32 UserApp1_u32TickMsgCount = 0;  /* ANT_TICK packet counter */
+
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
 
@@ -103,12 +106,15 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  PixelAddressType sStringLocation;
+  PixelBlockType G_sLcdClearLine7;
+  u8 au8WelcomeMessage[] = "ANT Slave Demo";
   AntAssignChannelInfoType sChannelInfo;
 
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_UNCONFIGURED)
   {
     sChannelInfo.AntChannel = U8_ANT_CHANNEL_PERIOD_HI_USERAPP; // thought it was U8_ANT_CHANNEL_USERAPP?
-    sChannelInfo.AntChannelType = CHANNEL_TYPE_MASTER;
+    sChannelInfo.AntChannelType = CHANNEL_TYPE_SLAVE;
     sChannelInfo.AntChannelPeriodHi = U8_ANT_CHANNEL_PERIOD_HI_USERAPP;
     sChannelInfo.AntChannelPeriodLo = U8_ANT_CHANNEL_PERIOD_LO_USERAPP;
     
@@ -125,18 +131,31 @@ void UserApp1Initialize(void)
     {
       sChannelInfo.AntNetworkKey[i] = ANT_DEFAULT_NETWORK_KEY;
     }
-    
-    AntAssignChannel(&sChannelInfo);
+    //AntAssignChannel(&sChannelInfo);
   }
 
-  /* If good initialization, set state to Idle */
-  if( 1 )
+  /* Update LEDs and LCD message for ANT Slave Demo */
+  LedOn(RED0);
+  /* Write the board string in the middle of last row */
+  sStringLocation.u16PixelColumnAddress = U16_LCD_CENTER_COLUMN - (strlen((char const*)au8WelcomeMessage) * (U8_LCD_SMALL_FONT_COLUMNS + U8_LCD_SMALL_FONT_SPACE) / 2);
+  sStringLocation.u16PixelRowAddress = U8_LCD_SMALL_FONT_LINE7;
+  G_sLcdClearLine7.u16RowSize = 10;
+  G_sLcdClearLine7.u16ColumnSize = U16_LCD_RIGHT_MOST_COLUMN;
+  G_sLcdClearLine7.u16RowStart = U16_LCD_BOTTOM_MOST_ROW - 10;
+  G_sLcdClearLine7.u16ColumnStart = 0;
+
+  LcdClearPixels(&G_sLcdClearLine7);
+  LcdLoadString(au8WelcomeMessage, LCD_FONT_SMALL, &sStringLocation);
+
+  /* If good initialization, set state to UserApp1SM_WaitAntReady */
+  if( AntAssignChannel(&sChannelInfo) )
   {
     UserApp1_pfStateMachine = UserApp1SM_WaitAntReady;
   }
   else
   {
     /* The task isn't properly initialized, so shut it down and don't run */
+    LedBlink(RED0, LED_4HZ);
     UserApp1_pfStateMachine = UserApp1SM_Error;
   }
 
@@ -178,7 +197,8 @@ State Machine Function Definitions
 static void UserApp1SM_WaitAntReady(void) {
   if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CONFIGURED) {
     if (AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP)) {
-      UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen;
+      LedOn(GREEN0);
+      UserApp1_pfStateMachine = UserApp1SM_Idle;
     }
     else {
       UserApp1_pfStateMachine = UserApp1SM_Error;
@@ -186,14 +206,30 @@ static void UserApp1SM_WaitAntReady(void) {
   }
 } /* end UserApp1SM_WaitAntReady() */
 
-/* Hold here until ANT confirms the channel is open */
+/* Hold here until ANT confirms the channel is open. LED status: green blink 2Hz */
 static void UserApp1SM_WaitChannelOpen(void) {
-  if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN)
+  if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
+    /* Channel opened: go to ChannelOpen state with solid green */
+    LedOff(GREEN0);
+    LedOn(GREEN0);
     UserApp1_pfStateMachine = UserApp1SM_ChannelOpen;
+  }
+
+  /* Check for timeout */
+  if (IsTimeUp(&UserApp1_u32Timeout, U32_TIMEOUT_OPEN_CHANNEL)) {
+    AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
+    LedOn(RED0);
+    UserApp1_pfStateMachine = UserApp1SM_Idle;
+  }
+
 } /* end UserApp1SM_WaitChannelOpen() */
 
 /* Process messages while channel is open */
 static void UserApp1SM_ChannelOpen(void) {
+  static u8 u8LastState = 0xff;
+  static u8 au8TickMessage[] = "EVENT x\n\r"; /* "x" at index [6] will be replaced by current code */
+  static u8 au8LastAntData[ANT_APPLICATION_MESSAGE_BYTES] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+  /* Stopped at ChannelOpen state*/
   static u8 au8TestMessage[] = {0, 0, 0, 0, 0xA5, 0, 0, 0};
   static PixelAddressType sStringLocation;
   u8 au8DataContent[] = "xxxxxxxxxxxxxxxx";
@@ -247,10 +283,25 @@ static void UserApp1SM_ChannelOpen(void) {
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
+  /* Look for BUTTON0 to open channel */
+  if (WasButtonPressed(BUTTON0)) {
+    /* Got the button, so complete one-time actions before next state */
+    ButtonAcknowledge(BUTTON0);
+
+    /* Queue open channel and change LED0 from yellow to blinking green to indicate channel is opening */
+    AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
+
+    LedOff(RED0);
+    LedOff(GREEN0);
+    LedBlink(GREEN0, LED_2HZ);
+
+    /* Set timer and advance states */
+    UserApp1_u32Timeout = G_u32SystemTime1ms;
+    UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen;
+  }
      
 } /* end UserApp1SM_Idle() */
      
-
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Handle an error */
 static void UserApp1SM_Error(void)          
