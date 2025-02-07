@@ -69,7 +69,7 @@ static u32 UserApp1_u32DataMsgCount = 0;  /* ANT_DATA packet counter */
 static u32 UserApp1_u32TickMsgCount = 0;  /* ANT_TICK packet counter */
 
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
-//static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
+static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
 
 
 /**********************************************************************************************************************
@@ -79,6 +79,7 @@ Function Definitions
 /* Function prototypes */
 static void UserApp1SM_WaitAntReady(void);
 static void UserApp1SM_WaitChannelOpen(void);
+static void UserApp1SM_WaitChannelClose(void);
 static void UserApp1SM_ChannelOpen(void);
 
 /*--------------------------------------------------------------------------------------------------------------------*/
@@ -216,7 +217,7 @@ static void UserApp1SM_WaitChannelOpen(void) {
   }
 
   /* Check for timeout */
-  if (IsTimeUp(&UserApp1_u32Timeout, U32_TIMEOUT_OPEN_CHANNEL)) {
+  if (IsTimeUp(&UserApp1_u32Timeout, U8_ANT_SEARCH_TIMEOUT)) {
     AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
     LedOn(RED0);
     UserApp1_pfStateMachine = UserApp1SM_Idle;
@@ -244,6 +245,7 @@ static void UserApp1SM_ChannelOpen(void) {
     AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
     u8LastState = 0xff;
     LedOff(RED0);
+    LedOff(GREEN0);
     LedBlink(GREEN0, LED_2HZ);
 
     /* Set time and advance states */
@@ -254,6 +256,8 @@ static void UserApp1SM_ChannelOpen(void) {
   /* A slave channel can close on its own, so explicitly check channel status */
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) != ANT_OPEN) {
     u8LastState = 0xff;
+    LedOff(RED0);
+    LedOff(GREEN0);
     LedBlink(GREEN0, LED_2HZ);
     
     UserApp1_u32Timeout = G_u32SystemTime1ms;
@@ -284,7 +288,27 @@ static void UserApp1SM_ChannelOpen(void) {
             /* Don't do anything here for now */
             break;
           }
-          
+          /* If we are paired but missing messages, blue blinks */
+          case EVENT_RX_FAIL: {
+            LedOff(GREEN0);
+            LedBlink(BLUE0, LED_2HZ);
+            break;
+          }
+          /* If we drop to search, LED is green */
+          case EVENT_RX_FAIL_GO_TO_SEARCH: {
+            LedOff(BLUE0);
+            LedOn(GREEN0);
+            break;
+          }
+          /* If the search times out, the channel should automatically close */
+          case EVENT_RX_SEARCH_TIMEOUT: {
+            DebugPrintf("Search timeout\r\n");
+            break;
+          }
+          default: {
+            DebugPrintf("Unexpected Event\r\n");
+            break;
+          }
         }
       }
     }
@@ -346,8 +370,9 @@ static void UserApp1SM_WaitChannelClose(void) {
   }
 
   /* Check for timeout */
-  if (IsTimeUp(&UserApp1_u32Timeout, U32_TIMEOUT_CLOSE_CHANNEL)) {
+  if (IsTimeUp(&UserApp1_u32Timeout, U8_ANT_SEARCH_TIMEOUT)) {
     LedOff(GREEN0);
+    LedOff(RED0);
     LedBlink(RED0, LED_4HZ);
     UserApp1_pfStateMachine = UserApp1SM_Error;
   }
